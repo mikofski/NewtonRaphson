@@ -67,18 +67,19 @@ Ftyp = F(typx); % typical f
 J0 = Ftyp*(1./typx'); % Jacobian scaling matrix
 %% set display
 if display
-    fprintf('\n%10s %10s %10s %12s\n', 'Niter', 'resnorm', 'stepnorm', ...
-        'convergence')
-    for n = 1:45,fprintf('-'),end,fprintf('\n')
-    printout = @(n, r, s, c)fprintf('%10d %10.4g %10.4g %12.4g\n', n, r, s, c);
+    fprintf('\n%10s %10s %10s %10s %12s\n', 'Niter', 'resnorm', 'stepnorm', ...
+        'rcond', 'convergence')
+    for n = 1:56,fprintf('-'),end,fprintf('\n')
+    printout = @(n, r, s, rc, c)fprintf('%10d %10.4g %10.4g %10.4g %12.4g\n', n, r, s, rc, c);
 end
 %% check initial guess
 x = x0; % initial guess
 [evalf, J] = F(x); % evaluate initial guess
+rc = rcond(J./J0); % reciprocal condition
 resnorm = norm(evalf); % calculate norm of the residuals
 %% solver
 Niter = 0; % start counter
-if display,printout(Niter, resnorm, 0, 0);end
+if display,printout(Niter, resnorm, 0, rc, 0);end
 while resnorm>tol && Niter<maxiter
     Niter = Niter+1; % increment counter
     Jstar = J./J0; % scale Jacobian
@@ -91,7 +92,8 @@ while resnorm>tol && Niter<maxiter
     resnorm = norm(evalf); % calculate new resnorm
     convergence = log(resnorm0/resnorm); % calculate convergence rate
     stepnorm = norm(dx); % norm of the step
-    if display,printout(Niter, resnorm, stepnorm, convergence);end
+    rc = rcond(J./J0); % reciprocal condition
+    if display,printout(Niter, resnorm, stepnorm, rc, convergence);end
 end
 %% output
 output.iterations = Niter;
