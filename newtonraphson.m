@@ -64,7 +64,7 @@ typx = x0; % x scaling value is the initial guess
 typx(x0==0) = 1; % remove zeros from typical x
 %% set scaling values
 Ftyp = F(typx); % typical f
-J0 = F(typx)*(1./typx'); % Jacobian scaling matrix
+J0 = Ftyp*(1./typx'); % Jacobian scaling matrix
 %% set display
 if display
     fprintf('\n%10s %10s %10s %12s\n', 'Niter', 'resnorm', 'stepnorm', ...
@@ -100,9 +100,9 @@ end
 
 function [evalf, J] = funwrapper(fun, x)
 % if nargout<2 use finite differences to estimate J
-if abs(nargout(fun))>=2
+try
     [evalf, J] = fun(x);
-else
+catch
     evalf = fun(x);
     J = jacobian(fun, x); % evaluate center diff if no Jacobian
 end
