@@ -154,15 +154,16 @@ while (resnorm>TOLFUN && Niter<MAXITER) || lambda<1
             end
             lambda = min(lambda,MAX_LAMBDA*lambda1); % minimum step length
         end
-        lambda2 = lambda1;f2 = f; % save 2nd most previous value
-        lambda = max(lambda,MIN_LAMBDA*lambda1); % minimum step length
-        continue
     elseif isnan(f) || isinf(f)
         % limit undefined evaluation or overflow
         lambda = MAX_LAMBDA*lambda1;
-        continue
     else
         lambda = 1; % fraction of Newton step
+    end
+    if lambda<1
+        lambda2 = lambda1;f2 = f; % save 2nd most previous value
+        lambda = max(lambda,MIN_LAMBDA*lambda1); % minimum step length
+        continue
     end
     %% display
     resnorm0 = resnorm; % old resnorm
