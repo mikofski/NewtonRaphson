@@ -34,7 +34,7 @@ fprintf('Outputs:\n')
 properties = {'Pressure','Pressure-drop','Temperature','Diameter','Length', ...
     'roughness','density','viscosity','Reynolds-number','speed','friction'};
 units = {'[Pa]','[Pa]','[C]','[cm]','[m]','[mm]','[kg/m^3]','[Pa*s]','[]','[m/s]','[]'};
-values = {p*1e6,dp,T-273.15,D/100,L,roughness*1000,rho,mu,Re(x(1)),x(1),x(2)};
+values = {p*1e6,dp,T-273.15,D*100,L,roughness*1000,rho,mu,Re(x(1)),x(1),x(2)};
 fprintf('%15s %10s %10s\n','Property','Unit','Value')
 results = [properties; units; values];
 fprintf('%15s %10s %10.4g\n',results{:})
@@ -50,4 +50,4 @@ plot(u0, f0, '-', u0, x(2)*ones(1,Ntest), '--', x(1)*ones(1,Ntest), f0, '--')
 grid
 title('Pipe flow solution using Haaland equation.')
 xlabel('water speed, u [m/s]'),ylabel('friction factor, f')
-legend('f_{Haaland}','f = 0.1024', 'u = 1.159 [m/s]')
+legend('f_{Haaland}',['f = ',num2str(x(2))], ['u = ',num2str(x(1)),' [m/s]'])
