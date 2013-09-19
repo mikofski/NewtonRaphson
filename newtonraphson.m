@@ -102,11 +102,12 @@ x = x0; % initial guess
 Jstar = J./J0; % scale Jacobian
 rc = rcond(Jstar); % reciprocal condition
 resnorm = norm(F); % calculate norm of the residuals
+dx = zeros(size(x0));convergence = Inf; % dummy values
 %% solver
 exitflag = 1; % normal exit
 Niter = 0; % start counter
 lambda = 1; % backtracking
-if DISPLAY,printout(Niter, resnorm, 0, 1, rc, 0);end
+if DISPLAY,printout(Niter, resnorm, norm(dx),lambda, rc, convergence);end
 while (resnorm>TOLFUN && Niter<MAXITER) || lambda<1
     if lambda==1
         %% Newton-Raphson solver
