@@ -27,10 +27,13 @@ residual_pressdrop = @(u, f) rho*u^2*f*L/2/D + dp;
 % residuals
 fun = @(x) [residual_friction(x(1),x(2)), residual_pressdrop(x(1),x(2))];
 %% solve
-x0 = [2.5,0.02]; % initial guess
-[x, resnorm, feval, output, jacob] = newtonraphson(fun, x0);
+x0 = [1,0.01]; % initial guess
+fprintf('\ninitial guess: u = %g[m/s], f = %g\n',x0) % display initial guess 
+options = optimset('TolX',1e-12); % set TolX
+[x, resnorm, f, exitflag, output, jacob] = newtonraphson(fun, x0, options);
+fprintf('\nexitflag: %d, %s\n',exitflag, output.message) % display output message
 %% results
-fprintf('Outputs:\n')
+fprintf('\nOutputs:\n')
 properties = {'Pressure','Pressure-drop','Temperature','Diameter','Length', ...
     'roughness','density','viscosity','Reynolds-number','speed','friction'};
 units = {'[Pa]','[Pa]','[C]','[cm]','[m]','[mm]','[kg/m^3]','[Pa*s]','[]','[m/s]','[]'};
