@@ -126,7 +126,7 @@ while (resnorm>TOL && Niter<MAXITER) || lambda<1
             if a == 0
                 lambda = -slope/2/b;
             else
-                discriminant = b^2 - 3*coeff(1)*slope;
+                discriminant = b^2 - 3*a*slope;
                 if discriminant<0
                     lambda = MAX_LAMBDA*lambda1;
                 elseif b<=0
