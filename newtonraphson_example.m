@@ -1,7 +1,9 @@
 %% newton raphson example
 % Find the Darcy friction factor for pipe flow using the Colebrook
 % equation.
-
+fprintf('\n**************************************************\n')
+fprintf('NON-LINEAR SYSTEM OF EQUATIONS - PIPE FLOW EXAMPLE\n')
+fprintf('**************************************************\n')
 %% References:
 % * http://en.wikipedia.org/wiki/Darcy_friction_factor_formulae
 % * http://en.wikipedia.org/wiki/Darcy%E2%80%93Weisbach_equation
@@ -54,3 +56,32 @@ grid
 title('Pipe flow solution using Haaland equation.')
 xlabel('water speed, u [m/s]'),ylabel('friction factor, f')
 legend('f_{Haaland}',['f = ',num2str(x(2))], ['u = ',num2str(x(1)),' [m/s]'])
+%% LSQ Curve Fitting
+fprintf('\n**********************************************\n')
+fprintf('LEAST SQUARES CURVE FITTING WITH NEWTONRAPHSON\n')
+fprintf('**********************************************\n')
+% independent variables
+[x,y] = meshgrid(0:10,0:10);
+% bivariate distribution
+bivar = @(x1,x2,sig,u1,u2)1/2/pi/sig^2*exp(-1/2*(((x1-u1).^2+(x2-u2).^2)/sig));
+sigma = 3; ux = 4; uy = 5; % std dev, x & y means
+z = bivar(x,y,sigma,ux,uy); % dist
+% plot
+figure,contour(x,y,z),hold('all')
+title('lsq curve-fitting bivariate pdf with newtonraphson')
+xlabel('x-coord'),ylabel('y-coord') % axes titles
+grid,colorbar % show colorbar and grid
+z_meas = z + (2*rand(11)-1)/1e4; % measured data
+% fitting function
+lsqfitfun = @(c)z_meas-bivar(x,y,c(1),c(2),c(3));
+% fit coefficients to fun
+c0 = [1,2,3]; % initial guess
+fprintf('\ninitial guess: sigma = %g, ux = %g, uy = %g\n',c0) % display initial guess 
+options = optimset('TolX',1e-12); % set TolX
+[c, ~, ~, exitflag, output] = newtonraphson(lsqfitfun, c0, options);
+fprintf('\nexitflag: %d, %s\n',exitflag, output.message) % display output message
+fprintf('\ncurve-fit coefficients: sigma=%g, ux=%g, uy=%g\n',c)
+lines = plot(repmat(c(2),1,11),0:10,'--',0:10,repmat(c(3),1,11),'--', ...
+    c(2),c(3),'o');
+set(lines,'LineWidth',2);
+legend('bivariate distribution','u_x','u_y','center')

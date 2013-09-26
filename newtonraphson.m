@@ -1,6 +1,7 @@
 function [x, resnorm, F, exitflag, output, jacob] = newtonraphson(fun, x0, options)
 % NEWTONRAPHSON Solve set of non-linear equations using Newton-Raphson method.
 %
+% [X, RESNORM, F, EXITFLAG, OUTPUT, JACOB] = NEWTONRAPHSON(FUN, X0, OPTIONS)
 % FUN is a function handle that returns a vector of residuals equations, F,
 % and takes a vector, x, as its only argument. When the equations are
 % solved by x, then F(x) == zeros(size(F(:), 1)).
@@ -49,6 +50,9 @@ function [x, resnorm, F, exitflag, output, jacob] = newtonraphson(fun, x0, optio
 %   Numerical Recipes in C, Second Edition (1992),
 %   http://www.nrbook.com/a/bookcpdf.php
 
+% Version 0.4
+% * allow lsq curve fitting type problems, IE non-square matrices
+% * exit if J is singular or if dx is NaN or Inf
 % Version 0.3
 % * Display RCOND each step.
 % * Replace nargout checking in funwrapper with ducktypin.
@@ -63,6 +67,7 @@ function [x, resnorm, F, exitflag, output, jacob] = newtonraphson(fun, x0, optio
 %   since no longer needed.
 % * Set typx = x0; typx(x0==0) = 1; % use initial guess as typx, if 0 use 1.
 % * Replace `feval` with `evalf` since `feval` is builtin.
+
 %% initialize
 % There are no argument checks!
 x0 = x0(:); % needs to be a column vector
@@ -86,7 +91,7 @@ MIN_LAMBDA = 0.1; % min lambda
 MAX_LAMBDA = 0.5; % max lambda
 %% set scaling values
 % TODO: let user set weights
-weight = ones(size(x0));
+weight = ones(numel(FUN(x0)),1);
 J0 = weight*(1./TYPX'); % Jacobian scaling matrix
 %% set display
 if DISPLAY
@@ -100,7 +105,7 @@ end
 x = x0; % initial guess
 [F, J] = FUN(x); % evaluate initial guess
 Jstar = J./J0; % scale Jacobian
-rc = rcond(Jstar); % reciprocal condition
+rc = 1/cond(Jstar); % reciprocal condition
 resnorm = norm(F); % calculate norm of the residuals
 dx = zeros(size(x0));convergence = Inf; % dummy values
 %% solver
@@ -123,6 +128,9 @@ while (resnorm>TOLFUN && Niter<MAXITER) || lambda<1
     end
     if lambda < lambda_min
         exitflag=2; % x is too close to xold
+        break
+    elseif any(isnan(dx)) || any(isinf(dx))
+        exitflag=-1; % matrix may be singular
         break
     end
     x = xold+dx*lambda; % next guess
@@ -170,7 +178,7 @@ while (resnorm>TOLFUN && Niter<MAXITER) || lambda<1
     resnorm = norm(F); % calculate new resnorm
     convergence = log(resnorm0/resnorm); % calculate convergence rate
     stepnorm = norm(dx); % norm of the step
-    rc = rcond(Jstar); % reciprocal condition
+    rc = 1/cond(Jstar); % reciprocal condition
     if DISPLAY,printout(Niter, resnorm, stepnorm, lambda1, rc, convergence);end
 end
 %% output
@@ -182,6 +190,8 @@ if Niter>MAXITER
     output.message = 'Number of iterations exceeded OPTIONS.MAXITER.';
 elseif exitflag==2
     output.message = 'May have converged, but X is to close to XOLD.';
+elseif exitflag==-1
+    output.message = 'Matrix may be singular. Step was NaN or Inf.';
 else
     output.message = 'Normal exit.';
 end
@@ -202,12 +212,13 @@ end
 function J = jacobian(fun, x)
 % estimate J
 dx = eps^(1/3); % finite difference delta
-dof = size(x, 1); % degrees of freedom
-J = zeros(dof); % a square matrix
-for n = 1:dof
+nx = numel(x); % degrees of freedom
+nf = numel(fun(x)); % number of functions
+J = zeros(nf,nx); % matrix of zeros
+for n = 1:nx
     % create a vector of deltas, change delta_n by dx
-    delta = zeros(dof, 1); delta(n) = delta(n)+dx;
+    delta = zeros(nx, 1); delta(n) = delta(n)+dx;
     dF = fun(x+delta)-fun(x-delta); % delta F
-    J(:, n) = dF/dx/2; % derivatives dF/d_n
+    J(:, n) = dF(:)/dx/2; % derivatives dF/d_n
 end
 end
