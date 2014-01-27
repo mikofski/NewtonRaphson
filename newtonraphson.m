@@ -105,7 +105,11 @@ end
 x = x0; % initial guess
 [F, J] = FUN(x); % evaluate initial guess
 Jstar = J./J0; % scale Jacobian
+if issparse(Jstar)
+    rc = 1/condest(Jstar);
+else
 rc = 1/cond(Jstar); % reciprocal condition
+end
 resnorm = norm(F); % calculate norm of the residuals
 dx = zeros(size(x0));convergence = Inf; % dummy values
 %% solver
@@ -178,7 +182,11 @@ while (resnorm>TOLFUN && Niter<MAXITER) || lambda<1
     resnorm = norm(F); % calculate new resnorm
     convergence = log(resnorm0/resnorm); % calculate convergence rate
     stepnorm = norm(dx); % norm of the step
+    if issparse(Jstar)
+        rc = 1/condest(Jstar);
+    else
     rc = 1/cond(Jstar); % reciprocal condition
+    end
     if DISPLAY,printout(Niter, resnorm, stepnorm, lambda1, rc, convergence);end
 end
 %% output
