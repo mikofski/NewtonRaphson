@@ -50,6 +50,11 @@ function [x, resnorm, F, exitflag, output, jacob] = newtonraphson(fun, x0, optio
 %   Numerical Recipes in C, Second Edition (1992),
 %   http://www.nrbook.com/a/bookcpdf.php
 
+% Version 0.5
+% * allow sparse matrices, replace cond() with condest()
+% * check if Jstar has NaN or Inf, return NaN or Inf for cond() and return
+%   exitflag: -1, matrix is singular.
+% * fix bug: max iteration detection and exitflag reporting typos
 % Version 0.4
 % * allow lsq curve fitting type problems, IE non-square matrices
 % * exit if J is singular or if dx is NaN or Inf
@@ -105,19 +110,29 @@ end
 x = x0; % initial guess
 [F, J] = FUN(x); % evaluate initial guess
 Jstar = J./J0; % scale Jacobian
+if any(isnan(Jstar(:))) || any(isinf(Jstar(:)))
+    exitflag = -1; % matrix may be singular
+else
+    exitflag = 1; % normal exit
+end
 if issparse(Jstar)
     rc = 1/condest(Jstar);
 else
-rc = 1/cond(Jstar); % reciprocal condition
+    if any(isnan(Jstar(:)))
+        rc = NaN;
+    elseif any(isinf(Jstar(:)))
+        rc = Inf;
+    else
+        rc = 1/cond(Jstar); % reciprocal condition
+    end
 end
 resnorm = norm(F); % calculate norm of the residuals
 dx = zeros(size(x0));convergence = Inf; % dummy values
 %% solver
-exitflag = 1; % normal exit
 Niter = 0; % start counter
 lambda = 1; % backtracking
-if DISPLAY,printout(Niter, resnorm, norm(dx),lambda, rc, convergence);end
-while (resnorm>TOLFUN && Niter<MAXITER) || lambda<1
+if DISPLAY,printout(Niter, resnorm, norm(dx), lambda, rc, convergence);end
+while (resnorm>TOLFUN || lambda<1) && exitflag>=0 && Niter<=MAXITER
     if lambda==1
         %% Newton-Raphson solver
         Niter = Niter+1; % increment counter
@@ -130,11 +145,11 @@ while (resnorm>TOLFUN && Niter<MAXITER) || lambda<1
         xold = x; % initial value
         lambda_min = TOLX/max(abs(dx)./max(abs(xold), 1));
     end
-    if lambda < lambda_min
-        exitflag=2; % x is too close to xold
+    if lambda<lambda_min
+        exitflag = 2; % x is too close to XOLD
         break
     elseif any(isnan(dx)) || any(isinf(dx))
-        exitflag=-1; % matrix may be singular
+        exitflag = -1; % matrix may be singular
         break
     end
     x = xold+dx*lambda; % next guess
@@ -152,7 +167,7 @@ while (resnorm>TOLFUN && Niter<MAXITER) || lambda<1
             C = [f-fold-lambda1*slope;f2-fold-lambda2*slope];
             coeff = num2cell(A*B*C);
             [a,b] = coeff{:};
-            if a == 0
+            if a==0
                 lambda = -slope/2/b;
             else
                 discriminant = b^2 - 3*a*slope;
@@ -182,10 +197,14 @@ while (resnorm>TOLFUN && Niter<MAXITER) || lambda<1
     resnorm = norm(F); % calculate new resnorm
     convergence = log(resnorm0/resnorm); % calculate convergence rate
     stepnorm = norm(dx); % norm of the step
+    if any(isnan(Jstar(:))) || any(isinf(Jstar(:)))
+        exitflag = -1; % matrix may be singular
+        break
+    end
     if issparse(Jstar)
         rc = 1/condest(Jstar);
     else
-    rc = 1/cond(Jstar); % reciprocal condition
+        rc = 1/cond(Jstar); % reciprocal condition
     end
     if DISPLAY,printout(Niter, resnorm, stepnorm, lambda1, rc, convergence);end
 end
@@ -193,11 +212,11 @@ end
 output.iterations = Niter; % final number of iterations
 output.stepsize = dx; % final stepsize
 output.lambda = lambda; % final lambda
-if Niter>MAXITER
+if Niter>=MAXITER
     exitflag = 0;
     output.message = 'Number of iterations exceeded OPTIONS.MAXITER.';
 elseif exitflag==2
-    output.message = 'May have converged, but X is to close to XOLD.';
+    output.message = 'May have converged, but X is too close to XOLD.';
 elseif exitflag==-1
     output.message = 'Matrix may be singular. Step was NaN or Inf.';
 else
