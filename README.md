@@ -3,6 +3,8 @@ NewtonRaphson
 Yet another solver that uses the backslash function to solve a set of
 non-linear equations.
 
+[![View NewtonRaphson on File Exchange](https://www.mathworks.com/matlabcentral/images/matlab-file-exchange.svg)](https://www.mathworks.com/matlabcentral/fileexchange/43097-newtonraphson)
+
 Description
 -----------
 Although this is the most basic non-linear solver, it is surprisingly powerful.
